@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brains College Chat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #4a00e0, #8e2de2);
+      color: white;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      text-align: center;
+      padding: 20px;
+      font-size: 24px;
+      font-weight: bold;
+      background: rgba(0,0,0,0.3);
+    }
+    #chat-box {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      margin: 10px;
+    }
+    .message {
+      padding: 8px 12px;
+      margin: 6px 0;
+      border-radius: 10px;
+      background: rgba(0,0,0,0.5);
+      word-wrap: break-word;
+    }
+    footer {
+      display: flex;
+      padding: 10px;
+      background: rgba(0,0,0,0.3);
+    }
+    footer input {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      margin-right: 8px;
+    }
+    footer button {
+      background: #ff9800;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    footer button:hover {
+      background: #e68900;
+    }
+  </style>
+</head>
+<body>
+
+  <header>Brains College Chat 💬</header>
+
+  <div id="chat-box"></div>
+
+  <footer>
+    <input type="text" id="username" placeholder="Your name" />
+    <input type="text" id="message" placeholder="Type a message..." />
+    <button onclick="sendMessage()">Send</button>
+  </footer>
+
+  <!-- Firebase -->
+  <script type="module">
+    // Import Firebase SDK
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyATnEao5q5U-kKcpXETQmz_st2UcDCACPA",
+      authDomain: "brains-college-3cfab.firebaseapp.com",
+      projectId: "brains-college-3cfab",
+      databaseURL: "https://brains-college-3cfab-default-rtdb.firebaseio.com",
+      storageBucket: "brains-college-3cfab.appspot.com",
+      messagingSenderId: "251169111291",
+      appId: "1:251169111291:web:f8175d4b01c68102b4445e",
+      measurementId: "G-1BKMHQTR4J"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const chatBox = document.getElementById("chat-box");
+    const messageInput = document.getElementById("message");
+    const usernameInput = document.getElementById("username");
+
+    function sendMessage() {
+      const message = messageInput.value.trim();
+      const username = usernameInput.value.trim() || "Anonymous";
+
+      if (message !== "") {
+        push(ref(db, "messages"), {
+          username: username,
+          message: message,
+          time: Date.now()
+        });
+        messageInput.value = "";
+      }
+    }
+
+    // Listen for new messages
+    onChildAdded(ref(db, "messages"), (snapshot) => {
+      const data = snapshot.val();
+      const msgDiv = document.createElement("div");
+      msgDiv.classList.add("message");
+      msgDiv.innerHTML = `<b>${data.username}:</b> ${data.message}`;
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+
+    // Allow Enter key to send message
+    messageInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
+
+</body>
+  </html>
