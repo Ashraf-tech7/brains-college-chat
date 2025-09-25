@@ -75,61 +75,63 @@
     <button onclick="sendMessage()">Send</button>
   </footer>
 
-  <!-- Firebase -->
   <script type="module">
-    // Import Firebase SDK
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+  // Import Firebase SDK
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 
-    // Your Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyATnEao5q5U-kKcpXETQmz_st2UcDCACPA",
-      authDomain: "brains-college-3cfab.firebaseapp.com",
-      projectId: "brains-college-3cfab",
-      databaseURL: "https://brains-college-3cfab-default-rtdb.firebaseio.com",
-      storageBucket: "brains-college-3cfab.appspot.com",
-      messagingSenderId: "251169111291",
-      appId: "1:251169111291:web:f8175d4b01c68102b4445e",
-      measurementId: "G-1BKMHQTR4J"
-    };
+  // Your Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyATnEao5q5U-kKcpXETQmz_st2UcDCACPA",
+    authDomain: "brains-college-3cfab.firebaseapp.com",
+    databaseURL: "https://brains-college-3cfab-default-rtdb.firebaseio.com",
+    projectId: "brains-college-3cfab",
+    storageBucket: "brains-college-3cfab.appspot.com",
+    messagingSenderId: "251169111291",
+    appId: "1:251169111291:web:f8175d4b01c68102b4445e",
+    measurementId: "G-1BKMHQTR4J"
+  };
 
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-    const chatBox = document.getElementById("chat-box");
-    const messageInput = document.getElementById("message");
-    const usernameInput = document.getElementById("username");
+  const chatBox = document.getElementById("chat-box");
+  const messageInput = document.getElementById("message");
+  const usernameInput = document.getElementById("username");
 
-    function sendMessage() {
-      const message = messageInput.value.trim();
-      const username = usernameInput.value.trim() || "Anonymous";
+  function sendMessage() {
+    const message = messageInput.value.trim();
+    const username = usernameInput.value.trim() || "Anonymous";
 
-      if (message !== "") {
-        push(ref(db, "messages"), {
-          username: username,
-          message: message,
-          time: Date.now()
-        });
-        messageInput.value = "";
-      }
+    if (message !== "") {
+      push(ref(db, "messages"), {
+        username: username,
+        message: message,
+        time: Date.now()
+      });
+      messageInput.value = "";
     }
+  }
 
-    // Listen for new messages
-    onChildAdded(ref(db, "messages"), (snapshot) => {
-      const data = snapshot.val();
-      const msgDiv = document.createElement("div");
-      msgDiv.classList.add("message");
-      msgDiv.innerHTML = `<b>${data.username}:</b> ${data.message}`;
-      chatBox.appendChild(msgDiv);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    });
+  // Listen for new messages
+  onChildAdded(ref(db, "messages"), (snapshot) => {
+    const data = snapshot.val();
+    const msgDiv = document.createElement("div");
+    msgDiv.classList.add("message");
+    msgDiv.innerHTML = `<b>${data.username}:</b> ${data.message}`;
+    chatBox.appendChild(msgDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
 
-    // Allow Enter key to send message
-    messageInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") sendMessage();
-    });
-  </script>
+  // Allow Enter key to send message
+  messageInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendMessage();
+  });
+
+  // Expose sendMessage for button
+  window.sendMessage = sendMessage;
+</script>
 
 </body>
   </html>
