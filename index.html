@@ -111,8 +111,8 @@
           chatDiv.style.display = "block";
         })
         .catch((error) => {
-          console.error("Login error:", error);
-        });
+  alert("Login failed: " + error.message);
+});
     });
 
     // Send message
