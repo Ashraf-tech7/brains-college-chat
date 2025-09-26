@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brains College Chat</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .container {
+      width: 100%;
+      max-width: 400px;
+      background: rgba(255,255,255,0.1);
+      padding: 20px;
+      border-radius: 12px;
+      color: white;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+    h1 { text-align: center; margin-bottom: 20px; }
+    input, button {
+      width: 100%; padding: 10px; margin: 8px 0;
+      border-radius: 6px; border: none; outline: none;
+    }
+    button {
+      background: #ffcc00; color: #000; font-weight: bold;
+      cursor: pointer; transition: 0.2s;
+    }
+    button:hover { background: #ffaa00; }
+    #chat-box {
+      height: 300px; overflow-y: auto; margin: 10px 0;
+      background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px;
+    }
+    .message { padding: 6px 10px; margin: 5px 0; border-radius: 6px; }
+    .sent { background: #4cafef; text-align: right; }
+    .received { background: #666; text-align: left; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Brains College Chat</h1>
+
+    <!-- Login/Signup Section -->
+    <div id="auth-section">
+      <input type="email" id="email" placeholder="Email" />
+      <input type="password" id="password" placeholder="Password" />
+      <button id="signup-btn">Sign Up</button>
+      <button id="login-btn">Log In</button>
+    </div>
+
+    <!-- Chat Section -->
+    <div id="chat-section" class="hidden">
+      <div id="chat-box"></div>
+      <input type="text" id="message-input" placeholder="Type a message..." />
+      <button id="send-btn">Send</button>
+      <button id="logout-btn" style="margin-top:10px; background:#f44336; color:white;">Log Out</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyATnEao5q5U-kKcpXETQmz_st2UcDCACPA",
+      authDomain: "brains-college-3cfab.firebaseapp.com",
+      projectId: "brains-college-3cfab",
+      storageBucket: "brains-college-3cfab.appspot.com",
+      messagingSenderId: "251169111291",
+      appId: "1:251169111291:web:f8175d4b01c68102b4445e",
+      measurementId: "G-1BKMHQTR4J"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const authSection = document.getElementById("auth-section");
+    const chatSection = document.getElementById("chat-section");
+    const chatBox = document.getElementById("chat-box");
+    const input = document.getElementById("message-input");
+
+    // Signup
+    document.getElementById("signup-btn").addEventListener("click", () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      createUserWithEmailAndPassword(auth, email, password)
+        .catch(err => alert(err.message));
+    });
+
+    // Login
+    document.getElementById("login-btn").addEventListener("click", () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      signInWithEmailAndPassword(auth, email, password)
+        .catch(err => alert(err.message));
+    });
+
+    // Logout
+    document.getElementById("logout-btn").addEventListener("click", () => {
+      signOut(auth);
+    });
+
+    // Auth State Change
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        authSection.classList.add("hidden");
+        chatSection.classList.remove("hidden");
+        loadMessages();
+      } else {
+        authSection.classList.remove("hidden");
+        chatSection.classList.add("hidden");
+      }
+    });
+
+    // Send Message
+    document.getElementById("send-btn").addEventListener("click", async () => {
+      if (input.value.trim() === "") return;
+      await addDoc(collection(db, "messages"), {
+        text: input.value,
+        user: auth.currentUser.email,
+        timestamp: Date.now()
+      });
+      input.value = "";
+    });
+
+    // Load Messages
+    function loadMessages() {
+      const q = query(collection(db, "messages"), orderBy("timestamp"));
+      onSnapshot(q, (snapshot) => {
+        chatBox.innerHTML = "";
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const msg = document.createElement("div");
+          msg.classList.add("message");
+          msg.textContent = `${data.user}: ${data.text}`;
+          msg.classList.add(data.user === auth.currentUser.email ? "sent" : "received");
+          chatBox.appendChild(msg);
+        });
+        chatBox.scrollTop = chatBox.scrollHeight;
+      });
+    }
+  </script>
+</body>
+</html>
