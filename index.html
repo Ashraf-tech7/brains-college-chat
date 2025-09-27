@@ -120,30 +120,35 @@
     const chatBox = document.getElementById("chatBox");
     const chatInput = document.getElementById("chatInput");
 
-    // Sign Up
-    function signUp() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      auth.createUserWithEmailAndPassword(email, password)
-        .then(() => {
-          errorDiv.textContent = "✅ Account created! You can now log in.";
-        })
-        .catch(e => errorDiv.textContent = "Error: " + e.message);
-    }
+    // Signup
+document.getElementById("signup-btn").addEventListener("click", () => {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  createUserWithEmailAndPassword(auth, email, password)
+    .then(userCredential => {
+      console.log("✅ Signup Success:", userCredential.user);
+      alert("Signup successful! You can now log in.");
+    })
+    .catch(err => {
+      console.error("❌ Signup Error:", err.code, err.message);
+      alert("Signup failed: " + err.message);
+    });
+});
 
-    // Log In
-    function logIn() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      auth.signInWithEmailAndPassword(email, password)
-        .then(user => {
-          errorDiv.textContent = "";
-          chatBox.style.display = "block";
-          chatInput.style.display = "flex";
-          loadMessages();
-        })
-        .catch(e => errorDiv.textContent = "Error: " + e.message);
-    }
+// Login
+document.getElementById("login-btn").addEventListener("click", () => {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  signInWithEmailAndPassword(auth, email, password)
+    .then(userCredential => {
+      console.log("✅ Login Success:", userCredential.user);
+      alert("Login successful!");
+    })
+    .catch(err => {
+      console.error("❌ Login Error:", err.code, err.message);
+      alert("Login failed: " + err.message);
+    });
+});
 
     // Send Message
     function sendMessage() {
