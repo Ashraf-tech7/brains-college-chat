@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Post</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <h1>Create a New Post</h1>
+  </header>
+
+  <!-- Post Form -->
+  <main>
+    <form id="postForm">
+      <!-- Image Upload -->
+      <label for="postImage">Choose Image:</label>
+      <input type="file" id="postImage" accept="image/*">
+
+      <!-- Caption -->
+      <label for="postCaption">Caption:</label>
+      <textarea id="postCaption" placeholder="Write something..." rows="3"></textarea>
+
+      <!-- Submit Button -->
+      <button type="submit">Post</button>
+    </form>
+  </main>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+
+  <!-- Firebase Config -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
+  <!-- Post Script -->
+  <script>
+    document.getElementById("postForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const file = document.getElementById("postImage").files[0];
+      const caption = document.getElementById("postCaption").value;
+
+      if (!file) {
+        alert("Please select an image before posting.");
+        return;
+      }
+
+      try {
+        // Upload to Firebase Storage
+        const storageRef = firebase.storage().ref("posts/" + file.name);
+        await storageRef.put(file);
+        const imageUrl = await storageRef.getDownloadURL();
+
+        // Save to Firestore
+        await firebase.firestore().collection("posts").add({
+          caption: caption,
+          image: imageUrl,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          userId: firebase.auth().currentUser.uid
+        });
+
+        alert("Post uploaded successfully!");
+        document.getElementById("postForm").reset();
+      } catch (error) {
+        console.error("Error posting:", error);
+        alert("Something went wrong. Try again!");
+      }
+    });
+  </script>
+</body>
+        </html>
