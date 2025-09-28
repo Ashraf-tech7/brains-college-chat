@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Post</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav>
+    <a href="feed.html">🏠 Feed</a>
+    <a href="post.html" class="active">➕ Post</a>
+    <a href="profile.html">👤 Profile</a>
+    <a href="explore.html">🔍 Explore</a>
+  </nav>
+
+  <div class="wrap">
+    <div class="card">
+      <h2>Create Post</h2>
+
+      <label>Image</label>
+      <input id="imageInput" type="file" accept="image/*" capture="environment">
+      <div class="preview" id="preview"></div>
+
+      <label>Caption</label>
+      <textarea id="caption" rows="3" placeholder="Write something..."></textarea>
+
+      <label>Tags</label>
+      <input id="tags" placeholder="e.g. #fun #travel">
+
+      <button id="postBtn">Post</button>
+    </div>
+  </div>
+
+  <script type="module" src="firebaseConfig.js"></script>
+  <script type="module" src="post.js"></script>
+</body>
+  </html>
