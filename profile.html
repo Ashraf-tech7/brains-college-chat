@@ -1,5 +1,19 @@
 <h2>Profile</h2>
-<p>Username: <span id="username">Ashraf</span></p>
+<p>Username: <span id="username"></span></p>
 <p>Followers: <span id="followers">0</span></p>
 <p>Following: <span id="following">0</span></p>
-<button>Edit Profile</button>
+<button onclick="editProfile()">Edit Profile</button>
+
+<script>
+  // Load username or set default
+  document.getElementById("username").textContent = 
+    localStorage.getItem("username") || "User";
+
+  function editProfile() {
+    const newName = prompt("Enter new username:");
+    if (newName) {
+      localStorage.setItem("username", newName);
+      document.getElementById("username").textContent = newName;
+    }
+  }
+</script>
