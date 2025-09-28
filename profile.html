@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Profile</title>
+  <style>
+    body{font-family:Arial,sans-serif;background:#f4f6f8;margin:0}
+    .wrap{max-width:640px;margin:24px auto;padding:12px}
+    .card{background:#fff;padding:16px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    .profile-pic{width:96px;height:96px;border-radius:50%;object-fit:cover}
+    input,textarea{width:100%;padding:10px;margin:8px 0;border-radius:8px;border:1px solid #ddd}
+    button{padding:10px 14px;border:none;border-radius:8px;background:#1da1f2;color:#fff;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h3>My Profile</h3>
+      <div style="display:flex;gap:12px;align-items:center">
+        <img id="pf-pic" src="https://via.placeholder.com/96" class="profile-pic" alt="pf">
+        <div>
+          <div><strong id="pf-username">Guest</strong> <span id="pf-verified" style="color:#1da1f2;display:none">✔️</span></div>
+          <div id="pf-bio" style="color:#666">Your bio here</div>
+        </div>
+      </div>
+
+      <hr style="margin:12px 0">
+
+      <h4>Edit Profile</h4>
+      <input id="username" placeholder="Username">
+      <textarea id="bio" rows="3" placeholder="Bio"></textarea>
+      <input id="pic" type="file" accept="image/*">
+      <div style="margin-top:8px">
+        <button id="saveBtn">Save</button>
+        <button id="verifyBtn" style="background:#2ecc71;margin-left:8px">Request/Set Verified</button>
+        <button id="logoutBtn" style="background:#f44336;margin-left:8px">Logout</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+function getProfile(){ return JSON.parse(localStorage.getItem('profile')||'null'); }
+function saveProfile(p){ localStorage.setItem('profile', JSON.stringify(p)); }
+
+function loadProfile(){
+  const p = getProfile();
+  if (!p) return;
+  document.getElementById('pf-pic').src = p.profilePic || 'https://via.placeholder.com/96';
+  document.getElementById('pf-username').innerText = p.username || 'Guest';
+  document.getElementById('pf-bio').innerText = p.bio || '';
+  document.getElementById('username').value = p.username || '';
+  document.getElementById('bio').value = p.bio || '';
+  document.getElementById('pf-verified').style.display = p.verified ? 'inline' : 'none';
+}
+
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const username = document.getElementById('username').value.trim();
+  const bio = document.getElementById('bio').value.trim();
+  const file = document.getElementById('pic').files[0];
+
+  if (!username){ alert('Username required'); return; }
+
+  const existing = getProfile() || {};
+  if (file){
+    const r = new FileReader();
+    r.onload = () => {
+      const p = { ...existing, username, bio, profilePic: r.result, verified: existing.verified || false, followers: existing.followers||0, following: existing.following||0 };
+      saveProfile(p);
+      alert('Saved');
+      loadProfile();
+    };
+    r.readAsDataURL(file);
+  } else {
+    const p = { ...existing, username, bio, profilePic: existing.profilePic||'', verified: existing.verified || false, followers: existing.followers||0, following: existing.following||0 };
+    saveProfile(p);
+    alert('Saved');
+    loadProfile();
+  }
+});
+
+document.getElementById('verifyBtn').addEventListener('click', () => {
+  const p = getProfile() || {};
+  p.verified = true; // for demo; ideally admin approves
+  saveProfile(p);
+  alert('Your profile is now marked verified (demo).');
+  loadProfile();
+});
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  // purely local logout for now
+  // remove profile to test guest behaviour (you can change later)
+  // localStorage.removeItem('profile');
+  alert('Logout only removes local profile on this demo. (Not logged into Firebase.)');
+});
+
+loadProfile();
+</script>
+</body>
+  </html>
