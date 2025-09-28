@@ -12,17 +12,59 @@
       return;
     }
 
-    posts.forEach(post => {
+    posts.forEach((post, index) => {
+      if (!post.likes) post.likes = 0;
+      if (!post.comments) post.comments = [];
+
       const div = document.createElement("div");
-      div.style.margin = "10px 0";
+      div.style.margin = "15px 0";
+
       div.innerHTML = `
         <div style="border:1px solid #ccc; padding:10px; border-radius:10px;">
-          <img src="${post.image}" style="max-width:100%; border-radius:10px;">
+          <strong>@${post.user}</strong><br>
+          <img src="${post.image}" style="max-width:100%; border-radius:10px; margin:10px 0;">
+          <p>${post.caption}</p>
+          <p style="color:blue;">${post.tags ? "#" + post.tags.split(",").join(" #") : ""}</p>
           <p style="font-size:12px; color:gray;">${post.time}</p>
+
+          <!-- Like Section -->
+          <button onclick="likePost(${index})">❤️ Like</button> 
+          <span id="likes-${index}">${post.likes}</span> likes
+
+          <!-- Comment Section -->
+          <div style="margin-top:10px;">
+            <input type="text" id="comment-${index}" placeholder="Write a comment..." style="width:70%">
+            <button onclick="addComment(${index})">💬</button>
+          </div>
+          <div id="comments-${index}" style="margin-top:5px; font-size:14px; color:#333;">
+            ${post.comments.map(c => `<p><strong>@${c.user}:</strong> ${c.text}</p>`).join("")}
+          </div>
         </div>
       `;
       feed.appendChild(div);
     });
+  }
+
+  function likePost(index) {
+    let posts = JSON.parse(localStorage.getItem("posts")) || [];
+    posts[index].likes = (posts[index].likes || 0) + 1;
+    localStorage.setItem("posts", JSON.stringify(posts));
+    document.getElementById(`likes-${index}`).innerText = posts[index].likes;
+  }
+
+  function addComment(index) {
+    let posts = JSON.parse(localStorage.getItem("posts")) || [];
+    const commentInput = document.getElementById(`comment-${index}`);
+    const text = commentInput.value.trim();
+
+    if (text === "") return;
+
+    const user = localStorage.getItem("username") || "Anonymous";
+    posts[index].comments.push({ user, text });
+
+    localStorage.setItem("posts", JSON.stringify(posts));
+    commentInput.value = "";
+    loadFeed(); // refresh comments instantly
   }
 
   loadFeed();
