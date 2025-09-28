@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Brains College — Feed</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#f5f6f8;margin:0}
+    header{background:#111;color:#fff;padding:12px 16px;text-align:center}
+    .container{max-width:700px;margin:18px auto;padding:0 12px}
+    .post{background:#fff;border-radius:10px;padding:12px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    .post-header{display:flex;align-items:center;gap:10px}
+    .post-header img{width:44px;height:44px;border-radius:50%;object-fit:cover}
+    .username{font-weight:700}
+    .verified{color:#1da1f2;margin-left:6px;font-size:14px}
+    .post img.post-image{width:100%;border-radius:8px;margin-top:10px}
+    .controls{display:flex;gap:10px;margin-top:10px;align-items:center}
+    .btn{background:#eee;padding:6px 10px;border-radius:8px;border:none;cursor:pointer}
+    .btn-primary{background:#1da1f2;color:#fff}
+    .comments{margin-top:8px;color:#222}
+    .comment{font-size:14px;padding:4px 0;border-bottom:1px solid #f1f1f1}
+    .view-more{color:#1da1f2;cursor:pointer;font-size:13px;margin-top:6px}
+    /* small menu for owner */
+    .owner-menu{margin-left:auto}
+    .meta{font-size:12px;color:#666;margin-top:6px}
+    .floating-post{position:fixed;right:20px;bottom:20px;background:#ff6b6b;color:#fff;border:none;padding:14px;border-radius:50%;font-size:20px;cursor:pointer}
+  </style>
+</head>
+<body>
+  <header><h3>Brains College — Feed</h3></header>
+  <div class="container">
+    <div id="feedContainer"></div>
+  </div>
+
+  <button class="floating-post" id="floatingPostBtn">＋</button>
+
+  <!-- Profile creation modal (reused) -->
+  <div id="profileModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
+    <div style="background:#fff;padding:18px;border-radius:10px;max-width:420px;margin:auto">
+      <h3>Create your profile</h3>
+      <input id="pm-username" placeholder="Username" style="width:100%;padding:8px;margin:6px 0"><br>
+      <input id="pm-bio" placeholder="Bio (optional)" style="width:100%;padding:8px;margin:6px 0"><br>
+      <input id="pm-pic" type="file" accept="image/*" style="margin:6px 0"><br>
+      <button id="pm-save" style="padding:8px 12px;margin-right:8px">Save</button>
+      <button id="pm-cancel" style="padding:8px 12px;background:#ddd">Cancel</button>
+    </div>
+  </div>
+
+<script>
+/* ---------- Storage helpers ---------- */
+function getProfile(){ return JSON.parse(localStorage.getItem('profile') || 'null'); }
+function saveProfile(p){ localStorage.setItem('profile', JSON.stringify(p)); }
+function getPosts(){ return JSON.parse(localStorage.getItem('posts') || '[]'); }
+function savePosts(list){ localStorage.setItem('posts', JSON.stringify(list)); }
+
+/* ---------- Require profile (shows modal if missing) ---------- */
+function requireProfile(callback){
+  const profile = getProfile();
+  if (!profile){
+    document.getElementById('profileModal').style.display = 'flex';
+    document.getElementById('pm-save').onclick = async () => {
+      const username = document.getElementById('pm-username').value.trim();
+      const bio = document.getElementById('pm-bio').value.trim();
+      const file = document.getElementById('pm-pic').files[0];
+
+      if (!username) { alert('Username is required'); return; }
+
+      if (file){
+        const r = new FileReader();
+        r.onload = () => {
+          const p = { username, bio, profilePic: r.result, verified:false, followers:0, following:0 };
+          saveProfile(p);
+          document.getElementById('profileModal').style.display = 'none';
+          callback && callback(p);
+          renderFeed();
+        };
+        r.readAsDataURL(file);
+      } else {
+        const p = { username, bio, profilePic:'', verified:false, followers:0, following:0 };
+        saveProfile(p);
+        document.getElementById('profileModal').style.display = 'none';
+        callback && callback(p);
+        renderFeed();
+      }
+    };
+    document.getElementById('pm-cancel').onclick = () => {
+      document.getElementById('profileModal').style.display = 'none';
+    };
+  } else {
+    callback && callback(profile);
+  }
+}
+
+/* ---------- Render feed ---------- */
+function renderFeed(){
+  const posts = getPosts();
+  const feed = document.getElementById('feedContainer');
+  feed.innerHTML = '';
+
+  if (posts.length === 0){
+    feed.innerHTML = '<p style="text-align:center;color:#666">No posts yet — be the first!</p>';
+    return;
+  }
+
+  // posts are stored newest-first; show in order (0 newest)
+  for (let i = 0; i < posts.length; i++){
+    const post = posts[i];
+    const postEl = document.createElement('div');
+    postEl.className = 'post';
+
+    // header
+    const profilePic = post.profilePic || 'https://via.placeholder.com/44';
+    const headerHtml = `
+      <div class="post-header">
+        <img src="${profilePic}" alt="pf">
+        <div>
+          <div><span class="username">${escapeHtml(post.username)}</span> ${post.verified ? '<span class="verified">✔️</span>' : ''}</div>
+          ${post.location ? `<div style="font-size:12px;color:#666">${escapeHtml(post.location)}</div>` : ''}
+        </div>
+        <div class="owner-menu"></div>
+      </div>
+    `;
+
+    // body
+    const bodyHtml = `
+      ${post.caption ? `<p>${escapeHtml(post.caption)}</p>` : ''}
+      ${post.image ? `<img class="post-image" src="${post.image}" alt="post">` : ''}
+      <div class="meta">Posted: ${escapeHtml(post.time || '')}</div>
+    `;
+
+    // likes display (can be hidden)
+    const likesHtml = post.hideLikes ? '' : `<button class="btn" onclick="likePost('${post.id}')">${post.likedBy && post.likedBy.includes((getProfile()||{}).username) ? '💔 Unike' : '❤️ Like'}</button>
+      <span id="likes-${post.id}">${post.likedBy ? post.likedBy.length : (post.likes||0)}</span> likes`;
+
+    // comments preview
+    const commentCount = (post.comments || []).length;
+    let commentsPreviewHtml = '';
+    if (!post.hideComments){
+      const preview = (post.comments || []).slice(0,2).map(c => `<div class="comment"><strong>@${escapeHtml(c.user)}:</strong> ${escapeHtml(c.text)}</div>`).join('');
+      commentsPreviewHtml = `<div id="comments-${post.id}" class="comments">${preview}</div>`;
+      if (commentCount > 2) commentsPreviewHtml += `<div class="view-more" onclick="toggleShowAll('${post.id}')">View ${commentCount - 2} more comments</div>`;
+    } else {
+      commentsPreviewHtml = `<div style="font-size:13px;color:#888">Comments are hidden</div>`;
+    }
+
+    // comment input
+    const commentInputHtml = `
+      <div style="margin-top:8px;display:flex;gap:8px;">
+        <input id="comment-input-${post.id}" placeholder="Write a comment..." style="flex:1;padding:8px;border-radius:8px;border:1px solid #ddd">
+        <button class="btn" onclick="addComment('${post.id}')">💬</button>
+      </div>
+    `;
+
+    postEl.innerHTML = headerHtml + bodyHtml + '<div class="controls">' + likesHtml + `<button class="btn" onclick="addCommentPrompt('${post.id}')">Comment</button>` + `</div>` + commentsPreviewHtml + commentInputHtml;
+
+    // owner menu (edit) if current user is owner
+    const profile = getProfile();
+    if (profile && profile.username === post.username){
+      const ownerMenu = postEl.querySelector('.owner-menu');
+      ownerMenu.innerHTML = `<button class="btn" onclick="editPost('${post.id}')">⋯</button>`;
+    }
+
+    feed.appendChild(postEl);
+  }
+}
+
+/* ---------- Utility ---------- */
+function escapeHtml(text){ if (!text) return ''; return text.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+/* ---------- Actions ---------- */
+function likePost(id){
+  const profile = getProfile();
+  if (!profile) { requireProfile(() => likePost(id)); return; }
+  const posts = getPosts();
+  const idx = posts.findIndex(p => p.id === id);
+  if (idx === -1) return;
+  posts[idx].likedBy = posts[idx].likedBy || [];
+  const user = profile.username;
+  const found = posts[idx].likedBy.indexOf(user);
+  if (found === -1){
+    posts[idx].likedBy.push(user);
+  } else {
+    posts[idx].likedBy.splice(found,1); // unlike
+  }
+  savePosts(posts);
+  renderFeed();
+}
+
+function addComment(id){
+  const profile = getProfile();
+  if (!profile) { requireProfile(() => addComment(id)); return; }
+  const input = document.getElementById(`comment-input-${id}`);
+  const text = input.value.trim();
+  if (!text) return;
+  const posts = getPosts();
+  const idx = posts.findIndex(p => p.id === id);
+  if (idx === -1) return;
+  posts[idx].comments = posts[idx].comments || [];
+  posts[idx].comments.push({ user: profile.username, text });
+  savePosts(posts);
+  input.value = '';
+  renderFeed();
+}
+
+// used by small Comment button that only prompts (for mobile)
+function addCommentPrompt(id){
+  const profile = getProfile();
+  if (!profile) { requireProfile(() => addCommentPrompt(id)); return; }
+  const text = prompt('Write your comment:');
+  if (text) {
+    const posts = getPosts();
+    const idx = posts.findIndex(p => p.id === id);
+    posts[idx].comments = posts[idx].comments || [];
+    posts[idx].comments.push({ user: profile.username, text: text.trim() });
+    savePosts(posts);
+    renderFeed();
+  }
+}
+
+function toggleShowAll(id){
+  // toggles show all by moving comments to top preview. We'll show all by replacing preview with full list.
+  const posts = getPosts();
+  const idx = posts.findIndex(p => p.id === id);
+  if (idx === -1) return;
+  const commentsContainer = document.getElementById(`comments-${id}`);
+  if (!commentsContainer) return;
+  const all = posts[idx].comments || [];
+  commentsContainer.innerHTML = all.map(c => `<div class="comment"><strong>@${escapeHtml(c.user)}</strong>: ${escapeHtml(c.text)}</div>`).join('');
+  // hide the "view more" link by clearing next sibling if present
+  const sibling = commentsContainer.nextElementSibling;
+  if (sibling && sibling.classList.contains('view-more')) sibling.style.display='none';
+}
+
+/* ---------- Edit Post (owner) ---------- */
+function editPost(id){
+  const posts = getPosts();
+  const idx = posts.findIndex(p => p.id === id);
+  if (idx === -1) return;
+  const post = posts[idx];
+  const newCaption = prompt('Edit caption:', post.caption || '');
+  if (newCaption !== null) post.caption = newCaption;
+  const newLocation = prompt('Set location (leave empty to clear):', post.location || '');
+  post.location = newLocation || '';
+  // toggle hide comments
+  const hideComments = confirm('Hide comments for this post? OK = hide, Cancel = show');
+  post.hideComments = hideComments;
+  const hideLikes = confirm('Hide like count for this post? OK = hide, Cancel = show');
+  post.hideLikes = hideLikes;
+  posts[idx] = post;
+  savePosts(posts);
+  renderFeed();
+}
+
+/* ---------- Floating "new post" button ---------- */
+document.getElementById('floatingPostBtn').onclick = () => {
+  // require profile then go to post page
+  requireProfile(() => {
+    window.location.href = 'post.html';
+  });
+};
+
+/* ---------- Init ---------- */
+renderFeed();
+</script>
+</body>
+  </html>
